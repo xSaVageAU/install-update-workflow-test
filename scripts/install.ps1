@@ -10,12 +10,16 @@ $ErrorActionPreference = "Stop"
 $Repo = "xSaVageAU/install-update-workflow-test"
 $Binary = "iuw"
 
+function Write-Info    { param([string]$Message) Write-Host "==> $Message" -ForegroundColor Cyan }
+function Write-Success { param([string]$Message) Write-Host "==> $Message" -ForegroundColor Green }
+function Write-Note    { param([string]$Message) Write-Host $Message -ForegroundColor Yellow }
+
 if (-not [Environment]::Is64BitOperatingSystem) {
     throw "unsupported architecture: 32-bit Windows is not supported"
 }
 $Arch = if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") { "arm64" } else { "amd64" }
 
-Write-Host "Fetching latest release info for $Repo..."
+Write-Info "Fetching latest release info for $Repo..."
 $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest"
 $tag = $release.tag_name
 if (-not $tag) {
@@ -26,7 +30,7 @@ $assetName = "${Binary}_windows_${Arch}.exe"
 $downloadUrl = "https://github.com/$Repo/releases/download/$tag/$assetName"
 $checksumsUrl = "https://github.com/$Repo/releases/download/$tag/checksums.txt"
 
-Write-Host "Installing $Binary $tag (windows/$Arch)..."
+Write-Info "Installing $Binary $tag (windows/$Arch)..."
 
 $tmpDir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid())
 New-Item -ItemType Directory -Path $tmpDir | Out-Null
@@ -53,7 +57,7 @@ try {
             if ($actual -ne $expected) {
                 throw "checksum mismatch for $assetName (expected $expected, got $actual)"
             }
-            Write-Host "Checksum verified."
+            Write-Success "Checksum verified."
         }
     }
 
@@ -61,7 +65,7 @@ try {
     $destPath = Join-Path $InstallDir "$Binary.exe"
     Move-Item -Force $tmpBinary $destPath
 
-    Write-Host "Installed to $destPath"
+    Write-Success "Installed to $destPath"
 
     $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
     $pathEntries = @()
@@ -70,11 +74,11 @@ try {
         $newPath = if ($userPath) { "$userPath;$InstallDir" } else { $InstallDir }
         [Environment]::SetEnvironmentVariable("Path", $newPath, "User")
         $env:Path = "$env:Path;$InstallDir"
-        Write-Host "Added $InstallDir to your user PATH. Open a new terminal for it to take effect."
+        Write-Success "Added $InstallDir to your user PATH. Open a new terminal for it to take effect."
     }
 
     Write-Host ""
-    Write-Host "Run '$Binary --version' to verify."
+    Write-Info "Run '$Binary --version' to verify."
 }
 finally {
     Remove-Item -Recurse -Force $tmpDir -ErrorAction SilentlyContinue
