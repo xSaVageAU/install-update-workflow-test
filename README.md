@@ -34,12 +34,23 @@ iuw about            # print version, commit, build date, and repo
 iuw update           # check for a newer release and offer to install it
 iuw update -check    # only check for an update, don't install it
 iuw update -yes      # install without prompting for confirmation
+iuw uninstall        # remove the installed binary
+iuw uninstall -yes   # uninstall without prompting for confirmation
 iuw help             # show usage
 ```
 
 `iuw update` queries the GitHub Releases API, compares the result against the
 running version, and — if a newer one exists — downloads, checksum-verifies,
 and installs it in place of the running binary.
+
+`iuw uninstall` deletes the running binary from disk, then best-effort
+undoes the PATH edit the install script made for it: on Windows it removes
+the binary's directory from the user `Path` environment variable; on
+macOS/Linux it removes the matching `export PATH=...` line install.sh
+appended to `~/.bashrc`/`~/.zshrc`. On Windows the delete itself uses the
+same rename trick as the updater (see below), followed by a short-lived
+detached helper process that deletes the renamed file once this process has
+exited.
 
 ## How the pieces fit together
 
@@ -52,7 +63,12 @@ and installs it in place of the running binary.
   tar/zip), named `iuw_<os>_<arch>` (`.exe` on Windows) plus a `checksums.txt`,
   so both the install scripts and the in-app updater can fetch and use them
   directly.
-- **`cmd/iuw`** — the CLI entry point: `version`/`about`/`update` subcommands.
+- **`internal/uninstall`** — deletes the running binary (`Run`), including the
+  Windows-specific rename-then-detached-delete dance needed to remove a file
+  that's still mapped into the current process, and best-effort undoes the
+  PATH edit install.sh/install.ps1 made for it.
+- **`cmd/iuw`** — the CLI entry point: `version`/`about`/`update`/`uninstall`
+  subcommands.
 - **`scripts/install.sh` / `scripts/install.ps1`** — the one-command installers
   described above.
 - **`.goreleaser.yaml`** + **`.github/workflows/release.yml`** — pushing a tag

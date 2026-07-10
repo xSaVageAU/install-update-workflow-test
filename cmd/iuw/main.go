@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/xSaVageAU/install-update-workflow-test/internal/uninstall"
 	"github.com/xSaVageAU/install-update-workflow-test/internal/update"
 	"github.com/xSaVageAU/install-update-workflow-test/internal/version"
 )
@@ -33,6 +34,8 @@ func main() {
 		runAbout()
 	case "update":
 		runUpdate(os.Args[2:])
+	case "uninstall":
+		runUninstall(os.Args[2:])
 	case "help", "-h", "--help":
 		printUsage()
 	default:
@@ -51,6 +54,8 @@ Usage:
   iuw update          check for a newer release and offer to install it
   iuw update -check   only check for an update, don't install it
   iuw update -yes     install without prompting for confirmation
+  iuw uninstall       remove the installed binary
+  iuw uninstall -yes  uninstall without prompting for confirmation
   iuw help            show this message`)
 }
 
@@ -106,6 +111,38 @@ func runUpdate(args []string) {
 	}
 
 	fmt.Println("Update installed. Run iuw again to use the new version.")
+}
+
+func runUninstall(args []string) {
+	fs := flag.NewFlagSet("uninstall", flag.ExitOnError)
+	yes := fs.Bool("yes", false, "uninstall without prompting for confirmation")
+	fs.Parse(args)
+
+	exePath, err := os.Executable()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "error:", err)
+		os.Exit(1)
+	}
+
+	if !*yes && !confirm(fmt.Sprintf("Remove %s?", exePath)) {
+		fmt.Println("Not uninstalling.")
+		return
+	}
+
+	result, err := uninstall.Run()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "error:", err)
+		os.Exit(1)
+	}
+
+	switch {
+	case result.PathWarning != nil:
+		fmt.Printf("Uninstalled, but could not remove %s from PATH: %v\n", result.Dir, result.PathWarning)
+	case result.PathRemoved:
+		fmt.Printf("Uninstalled and removed %s from PATH.\n", result.Dir)
+	default:
+		fmt.Println("Uninstalled.")
+	}
 }
 
 func confirm(prompt string) bool {
