@@ -1,0 +1,44 @@
+version: 2
+
+project_name: iuw
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: iuw
+    main: ./cmd/iuw
+    binary: iuw
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/xSaVageAU/install-update-workflow-test/internal/version.Version={{.Version}}
+      - -X github.com/xSaVageAU/install-update-workflow-test/internal/version.Commit={{.ShortCommit}}
+      - -X github.com/xSaVageAU/install-update-workflow-test/internal/version.Date={{.Date}}
+
+# Raw binaries rather than tar/zip archives, so install.sh/install.ps1 and the
+# in-app updater (internal/update) can download and run them with no
+# extraction step. GoReleaser appends the platform extension (.exe) itself.
+archives:
+  - format: binary
+    name_template: "{{ .Binary }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
