@@ -1,8 +1,7 @@
 # install-update-workflow-test
 
-A small Go TUI (built with [Bubble Tea](https://github.com/charmbracelet/bubbletea))
-used to work through three patterns that come up in almost every self-contained
-CLI tool:
+A small Go CLI used to work through three patterns that come up in almost
+every self-contained CLI tool:
 
 1. A one-command install script that fetches the right binary and puts it on `PATH`.
 2. Checking for and applying updates from *inside* the running app.
@@ -27,15 +26,20 @@ matching binary, verify its SHA-256 checksum against `checksums.txt`, install
 it to a user-owned directory (`~/.local/bin`, or `%LOCALAPPDATA%\Programs\iuw`
 on Windows), and add that directory to `PATH` if it isn't already there.
 
-## Run
+## Usage
 
 ```sh
-iuw
+iuw version          # print the running version
+iuw about            # print version, commit, build date, and repo
+iuw update           # check for a newer release and offer to install it
+iuw update -check    # only check for an update, don't install it
+iuw update -yes      # install without prompting for confirmation
+iuw help             # show usage
 ```
 
-`↑`/`↓` to move, `enter` to select, `q` to quit. The menu has "Check for
-updates" (queries the GitHub Releases API and offers to install if a newer
-version is published) and "About" (shows the running version/commit/build date).
+`iuw update` queries the GitHub Releases API, compares the result against the
+running version, and — if a newer one exists — downloads, checksum-verifies,
+and installs it in place of the running binary.
 
 ## How the pieces fit together
 
@@ -48,8 +52,7 @@ version is published) and "About" (shows the running version/commit/build date).
   tar/zip), named `iuw_<os>_<arch>` (`.exe` on Windows) plus a `checksums.txt`,
   so both the install scripts and the in-app updater can fetch and use them
   directly.
-- **`internal/tui`** — the Bubble Tea model that drives the menu and the
-  check/confirm/apply update flow.
+- **`cmd/iuw`** — the CLI entry point: `version`/`about`/`update` subcommands.
 - **`scripts/install.sh` / `scripts/install.ps1`** — the one-command installers
   described above.
 - **`.goreleaser.yaml`** + **`.github/workflows/release.yml`** — pushing a tag
