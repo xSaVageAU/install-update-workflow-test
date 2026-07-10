@@ -29,7 +29,7 @@ builds:
 # in-app updater (internal/update) can download and run them with no
 # extraction step. GoReleaser appends the platform extension (.exe) itself.
 archives:
-  - format: binary
+  - formats: [binary]
     name_template: "{{ .Binary }}_{{ .Os }}_{{ .Arch }}"
 
 checksum:
