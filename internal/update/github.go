@@ -8,11 +8,16 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 )
 
 // apiBase is a var (not const) so tests can point it at an httptest server.
 var apiBase = "https://api.github.com"
+
+// httpClient is shared by every request this package makes. It has no
+// Timeout of its own: callers set a deadline on the context they pass in
+// (see cmd/iuw's use of context.WithTimeout), so there's a single place
+// that controls how long an operation is allowed to take.
+var httpClient = &http.Client{}
 
 // Release is the subset of the GitHub releases API response we care about.
 type Release struct {
@@ -64,8 +69,7 @@ func LatestRelease(ctx context.Context, owner, repo string) (*Release, error) {
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
 
-	client := &http.Client{Timeout: 15 * time.Second}
-	resp, err := client.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("checking for updates: %w", err)
 	}

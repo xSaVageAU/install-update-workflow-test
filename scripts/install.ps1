@@ -35,9 +35,16 @@ try {
     $tmpBinary = Join-Path $tmpDir $assetName
     Invoke-WebRequest -Uri $downloadUrl -OutFile $tmpBinary
 
+    $checksumsPath = Join-Path $tmpDir "checksums.txt"
+    $haveChecksums = $false
     try {
-        $checksumsPath = Join-Path $tmpDir "checksums.txt"
         Invoke-WebRequest -Uri $checksumsUrl -OutFile $checksumsPath
+        $haveChecksums = $true
+    } catch {
+        Write-Warning "Could not fetch checksums.txt: $_"
+    }
+
+    if ($haveChecksums) {
         $pattern = [regex]::Escape($assetName) + '$'
         $line = Get-Content $checksumsPath | Where-Object { $_ -match $pattern }
         if ($line) {
@@ -48,8 +55,6 @@ try {
             }
             Write-Host "Checksum verified."
         }
-    } catch {
-        Write-Warning "Could not verify checksum: $_"
     }
 
     New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null

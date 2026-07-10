@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"time"
 )
 
 // Apply downloads the given asset, verifies its checksum against the
@@ -84,8 +83,7 @@ func downloadFile(ctx context.Context, url, dest string) error {
 	if err != nil {
 		return err
 	}
-	client := &http.Client{Timeout: 5 * time.Minute}
-	resp, err := client.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("downloading %s: %w", filepath.Base(dest), err)
 	}
@@ -118,8 +116,7 @@ func verifyChecksum(ctx context.Context, checksumsURL, assetName, filePath strin
 	if err != nil {
 		return err
 	}
-	client := &http.Client{Timeout: 15 * time.Second}
-	resp, err := client.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("downloading checksums: %w", err)
 	}

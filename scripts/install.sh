@@ -63,15 +63,17 @@ if fetch_to "https://github.com/${REPO}/releases/download/${TAG}/checksums.txt" 
       ACTUAL=$(shasum -a 256 "$TMP_DIR/$ASSET" | awk '{print $1}')
     else
       echo "warning: no sha256 tool found, skipping checksum verification" >&2
-      ACTUAL="$EXPECTED"
+      ACTUAL=""
     fi
-    if [ "$ACTUAL" != "$EXPECTED" ]; then
-      echo "error: checksum mismatch for $ASSET" >&2
-      echo "  expected: $EXPECTED" >&2
-      echo "  actual:   $ACTUAL" >&2
-      exit 1
+    if [ -n "$ACTUAL" ]; then
+      if [ "$ACTUAL" != "$EXPECTED" ]; then
+        echo "error: checksum mismatch for $ASSET" >&2
+        echo "  expected: $EXPECTED" >&2
+        echo "  actual:   $ACTUAL" >&2
+        exit 1
+      fi
+      echo "Checksum verified."
     fi
-    echo "Checksum verified."
   fi
 else
   echo "warning: checksums.txt not found, skipping verification" >&2
